@@ -1,0 +1,4 @@
+# Runtime intentionally uses only Python standard library.
+
+# Development / verification
+pytest>=8.0

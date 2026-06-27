@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bioresearch-agent"
+version = "0.1.0"
+description = "Privacy-safe biomedical research agent scaffold with skill and tool extension."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Personal Project"}]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+bioresearch-agent = "bioresearch_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["bioresearch_agent*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
