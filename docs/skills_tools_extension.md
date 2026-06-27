@@ -99,3 +99,5 @@ question
 3. Add review status to marker verification reports.
 4. Add same-marker contrast tables for paper groups.
 5. Keep all private integrations behind placeholders or omitted entirely.
+
+For the complete question-to-report flow, including PubMed/arXiv/bioRxiv retrieval, disease/gene/drug/method/dataset extraction, citation-backed summaries, next-step workflow generation, and MemoryWeaver trace capture, see [end_to_end_workflow.md](end_to_end_workflow.md).

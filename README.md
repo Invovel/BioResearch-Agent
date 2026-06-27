@@ -8,6 +8,12 @@ BioResearch-Agent is a compact Python project for public-safe biomedical literat
 search references -> attach neutral markers -> verify marker support -> compare same-marker papers -> expand search
 ```
 
+The full target workflow is organized in [docs/end_to_end_workflow.md](docs/end_to_end_workflow.md):
+
+```text
+question -> PubMed/arXiv/bioRxiv retrieval -> entity extraction -> cited summary -> next workflow -> MemoryWeaver trace -> report
+```
+
 The project deliberately stays narrower than a full research platform. It does not rank papers as good/bad, does not claim clinical validity, and does not copy private project code, data, model paths, logs, or tool implementations.
 
 ## What Stays
@@ -66,6 +72,7 @@ python -m bioresearch_agent "Search public papers for RAG evidence retrieval" --
 - [CODEX.md](CODEX.md): operating guide for Codex-style coding agents.
 - [CLAUDE.md](CLAUDE.md): short Claude-compatible pointer to the same rules.
 - [docs/skills_tools_extension.md](docs/skills_tools_extension.md): extension rules.
+- [docs/end_to_end_workflow.md](docs/end_to_end_workflow.md): full public-safe research workflow from question to report.
 - [docs/privacy_sanitization.md](docs/privacy_sanitization.md): sanitization rules.
 - [docs/vibe_coding.md](docs/vibe_coding.md): working loop.
 - [docs/one_sentence_summary.md](docs/one_sentence_summary.md): one-line report.
