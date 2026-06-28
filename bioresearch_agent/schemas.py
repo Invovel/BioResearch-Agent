@@ -14,6 +14,9 @@ class EvidenceDoc:
     abstract: str
     tags: tuple[str, ...] = ()
     year: int | None = None
+    source_id: str = ""
+    url: str = ""
+    doi: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -86,6 +89,155 @@ class ReferenceVerification:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(frozen=True)
+class EntityMention:
+    """Reviewable public metadata entity mention."""
+
+    entity_type: str
+    text: str
+    normalized_name: str
+    doc_id: str
+    evidence_field: str
+    confidence: str = "medium"
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class MemoryWeaverTrace:
+    """Public-safe trace of successful and failed workflow paths."""
+
+    run_id: str
+    question: str
+    query_plan: dict[str, Any]
+    success_paths: tuple[dict[str, Any], ...] = ()
+    failure_paths: tuple[dict[str, Any], ...] = ()
+    evidence_sources: tuple[dict[str, Any], ...] = ()
+    path_patterns: tuple[dict[str, Any], ...] = ()
+    warnings: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ManuscriptSectionPlan:
+    """Reviewable manuscript section plan."""
+
+    section: str
+    purpose: str
+    evidence_inputs: tuple[str, ...] = ()
+    quality_gate: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ManuscriptWorkflow:
+    """Public-safe manuscript workflow inspired by mature academic-writing skill patterns."""
+
+    target_style: str
+    strategist_steps: tuple[str, ...]
+    composer_steps: tuple[str, ...]
+    imrad_outline: tuple[ManuscriptSectionPlan, ...]
+    narrative_checks: tuple[str, ...]
+    audit_gates: tuple[str, ...]
+    reviewer_response_plan: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload["imrad_outline"] = [item.to_dict() for item in self.imrad_outline]
+        return payload
+
+
+@dataclass(frozen=True)
+class WorkflowContractCheck:
+    """Reviewable workflow-stage contract check."""
+
+    stage: str
+    status: str
+    evidence: tuple[str, ...] = ()
+    missing: tuple[str, ...] = ()
+    note: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ExternalSkillSpec:
+    """Public-safe external SKILL.md descriptor."""
+
+    skill_id: str
+    name: str
+    description: str
+    path: str
+    source: str = "local"
+    tags: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class LangGraphNodeSpec:
+    """Adapter-neutral node contract for mounting an external skill in LangGraph."""
+
+    node_id: str
+    skill_id: str
+    trigger_summary: str
+    input_contract: tuple[str, ...]
+    output_contract: tuple[str, ...]
+    safety_policy: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class SkillWorkflowSpec:
+    """LangGraph-style workflow contract owned by one skill."""
+
+    skill_id: str
+    workflow_id: str
+    description: str
+    nodes: tuple[dict[str, Any], ...]
+    edges: tuple[tuple[str, str], ...]
+    tool_ids: tuple[str, ...] = ()
+    safety_gates: tuple[str, ...] = ()
+    memory_policy: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class EndToEndReport:
+    """Complete public-safe workflow result."""
+
+    question: str
+    references: tuple[EvidenceDoc, ...]
+    entities: tuple[EntityMention, ...]
+    summary: str
+    next_workflow: tuple[str, ...]
+    manuscript_workflow: ManuscriptWorkflow
+    memory_trace: MemoryWeaverTrace
+    contract_checks: tuple[WorkflowContractCheck, ...]
+    markdown: str
+    human_review_required: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload["references"] = [item.to_dict() for item in self.references]
+        payload["entities"] = [item.to_dict() for item in self.entities]
+        payload["manuscript_workflow"] = self.manuscript_workflow.to_dict()
+        payload["memory_trace"] = self.memory_trace.to_dict()
+        payload["contract_checks"] = [item.to_dict() for item in self.contract_checks]
+        return payload
 
 
 @dataclass(frozen=True)

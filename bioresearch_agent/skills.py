@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from .schemas import EvidenceDoc, ResearchRequest, SkillResult
+from .skill_workflows import DATA_GROUNDED_TOOL_CHAIN, PROTOCOL_TOOL_CHAIN, RESEARCH_PLAN_TOOL_CHAIN, workflow_for_skill
 
 SkillHandler = Callable[[ResearchRequest, tuple[EvidenceDoc, ...]], SkillResult]
 
@@ -13,6 +14,8 @@ class SkillSpec:
     skill_id: str
     purpose: str
     trigger_terms: tuple[str, ...]
+    workflow_id: str = ""
+    tool_ids: tuple[str, ...] = ()
     review_required: bool = True
 
 
@@ -49,6 +52,8 @@ class SkillRegistry:
                 skill_id="data_grounded_literature_validation",
                 purpose="Use uploaded data observations to search references, validate citation relevance, assess data reliability, and surface novelty.",
                 trigger_terms=("paper", "literature", "pubmed", "arxiv", "reference", "citation", "upload", "image", "data", "文献", "论文", "引用", "上传", "图片", "数据"),
+                workflow_id="workflow.data_grounded_literature_validation.v1",
+                tool_ids=DATA_GROUNDED_TOOL_CHAIN,
             ),
             data_grounded_literature_validation,
         )
@@ -57,6 +62,8 @@ class SkillRegistry:
                 skill_id="protocol_checklist",
                 purpose="Draft a reviewable protocol checklist.",
                 trigger_terms=("protocol", "checklist", "experiment", "实验", "方案"),
+                workflow_id="workflow.protocol_checklist.v1",
+                tool_ids=PROTOCOL_TOOL_CHAIN,
             ),
             protocol_checklist,
         )
@@ -65,10 +72,15 @@ class SkillRegistry:
                 skill_id="research_plan",
                 purpose="Create a structured biomedical research plan.",
                 trigger_terms=("plan", "workflow", "research", "分析", "规划"),
+                workflow_id="workflow.research_plan.v1",
+                tool_ids=RESEARCH_PLAN_TOOL_CHAIN,
             ),
             research_plan,
         )
         return registry
+
+    def workflow_specs(self):
+        return tuple(item for item in (workflow_for_skill(spec.skill_id) for spec in self.list_specs()) if item is not None)
 
 
 def data_grounded_literature_validation(request: ResearchRequest, evidence: tuple[EvidenceDoc, ...]) -> SkillResult:

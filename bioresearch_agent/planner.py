@@ -7,6 +7,7 @@ from .retrieval import SimpleRetriever
 from .schemas import EvidenceDoc, ResearchPlan, ResearchRequest, ToolResult
 from .skills import SkillRegistry
 from .tools import ToolRegistry
+from .workflow_runtime import SkillWorkflowRuntime
 
 
 class BioResearchAgent:
@@ -40,20 +41,15 @@ class BioResearchAgent:
         innovation_signals = find_innovation_signals(evidence, uploaded_data)
         reference_marks = mark_references(evidence)
         reference_verifications = verify_marks(evidence, reference_marks)
-        skill_results = tuple(handler(request, evidence) for _, handler in self.skills.select(request.query))
+        selected_skills = self.skills.select(request.query)
+        skill_results = tuple(handler(request, evidence) for _, handler in selected_skills)
         tool_results: tuple[ToolResult, ...] = ()
         if request.allow_tool_execution:
-            tool_results = self.tools.run_chain(
-                (
-                    "reference_search",
-                    "data_reliability_check",
-                    "paper_data_alignment",
-                    "innovation_scan",
-                    "reference_mark",
-                    "marker_verify",
-                    "marker_compare",
-                ),
-                {
+            tool_results = _run_selected_workflows(
+                selected_skills,
+                tools=self.tools,
+                privacy_gate=self.privacy_gate,
+                payload={
                     "query": request.query,
                     "top_k": 5,
                     "uploaded_files": request.uploaded_files,
@@ -114,3 +110,17 @@ def classify_intent(query: str) -> str:
     if any(term in lowered for term in tool_terms):
         return "tool_aware_planning"
     return "research_planning"
+
+
+def _run_selected_workflows(selected_skills, *, tools: ToolRegistry, privacy_gate: PrivacyGate, payload: dict) -> tuple[ToolResult, ...]:
+    runtime = SkillWorkflowRuntime(tools=tools, privacy_gate=privacy_gate)
+    results: list[ToolResult] = []
+    for spec, _ in selected_skills:
+        from .skill_workflows import workflow_for_skill
+
+        workflow = workflow_for_skill(spec.skill_id)
+        if workflow is None:
+            continue
+        run = runtime.run(workflow, payload)
+        results.extend(run.tool_results)
+    return tuple(results)

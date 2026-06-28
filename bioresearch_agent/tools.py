@@ -95,6 +95,10 @@ class ToolRegistry:
     def list_specs(self) -> tuple[ToolSpec, ...]:
         return tuple(item[0] for item in self._tools.values())
 
+    def get_spec(self, tool_id: str) -> ToolSpec | None:
+        item = self._tools.get(tool_id)
+        return item[0] if item else None
+
     @classmethod
     def defaults(cls, privacy_gate: PrivacyGate | None = None) -> "ToolRegistry":
         registry = cls(privacy_gate=privacy_gate)

@@ -1,11 +1,16 @@
 import pytest
 
 from bioresearch_agent import BioResearchAgent, ResearchRequest
+from bioresearch_agent.benchmark import run_benchmark
 from bioresearch_agent.cli import main
+from bioresearch_agent.end_to_end_workflow import run_end_to_end_workflow
+from bioresearch_agent.external_skills import build_langgraph_node_specs, discover_external_skills
 from bioresearch_agent.planner import classify_intent
+from bioresearch_agent.skill_workflows import default_skill_workflows, workflow_langgraph_nodes
 from bioresearch_agent.skills import SkillRegistry
 from bioresearch_agent.schemas import ToolResult
 from bioresearch_agent.tools import ToolRegistry, ToolSpec
+from bioresearch_agent.workflow_runtime import SkillWorkflowRuntime
 
 
 def test_agent_builds_public_safe_research_plan():
@@ -127,6 +132,9 @@ def test_default_skills_and_tools_are_listable():
     tool_ids = {spec.tool_id for spec in ToolRegistry.defaults().list_specs()}
 
     assert skill_ids == {"data_grounded_literature_validation", "protocol_checklist", "research_plan"}
+    skill_specs = {spec.skill_id: spec for spec in SkillRegistry.defaults().list_specs()}
+    assert skill_specs["data_grounded_literature_validation"].workflow_id == "workflow.data_grounded_literature_validation.v1"
+    assert "reference_search" in skill_specs["data_grounded_literature_validation"].tool_ids
     assert {
         "public_paper_search",
         "reference_search",
@@ -143,6 +151,39 @@ def test_default_skills_and_tools_are_listable():
     assert specs["marker_verify"].produced_outputs == ("verifications",)
 
 
+def test_internal_skills_have_langgraph_style_workflows():
+    workflows = default_skill_workflows()
+    by_skill = {item.skill_id: item for item in workflows}
+
+    assert set(by_skill) == {"data_grounded_literature_validation", "protocol_checklist", "research_plan"}
+    data_workflow = by_skill["data_grounded_literature_validation"]
+    assert data_workflow.tool_ids[:2] == ("reference_search", "data_reliability_check")
+    assert ("privacy_gate", "reference_search") in data_workflow.edges
+    nodes = workflow_langgraph_nodes(data_workflow)
+    assert nodes[0].node_id.startswith("workflow.data_grounded_literature_validation.v1::")
+    assert "privacy_gate" in nodes[0].safety_policy
+
+
+def test_skill_workflow_runtime_executes_tool_nodes():
+    workflow = {item.skill_id: item for item in default_skill_workflows()}["data_grounded_literature_validation"]
+    runtime = SkillWorkflowRuntime(tools=ToolRegistry.defaults())
+
+    result = runtime.run(
+        workflow,
+        {
+            "query": "Search public papers for biomedical evidence retrieval",
+            "top_k": 3,
+            "uploaded_files": ("figure1.png",),
+            "data_notes": ("retrieval evidence workflow",),
+        },
+    )
+
+    assert result.status == "ok"
+    assert [item.tool_id for item in result.tool_results] == list(workflow.tool_ids)
+    assert "comparison" in result.context_keys
+    assert any(item["kind"] == "memory" for item in result.node_results)
+
+
 def test_cli_lists_skills_and_tools(capsys):
     assert main(["--list-skills"]) == 0
     skills_output = capsys.readouterr().out
@@ -155,6 +196,22 @@ def test_cli_lists_skills_and_tools(capsys):
     assert "paper_data_alignment" in tools_output
     assert "marker_verify" in tools_output
     assert "markdown_brief_export" in tools_output
+
+    assert main(["--list-workflows"]) == 0
+    workflows_output = capsys.readouterr().out
+    assert "workflow.data_grounded_literature_validation.v1" in workflows_output
+    assert "reference_search" in workflows_output
+
+
+def test_cli_outputs_internal_workflow_specs(capsys):
+    assert main(["--workflow-specs", "--json"]) == 0
+    payload = capsys.readouterr().out
+    assert "workflow.research_plan.v1" in payload
+    assert "safety_gates" in payload
+
+    assert main(["--workflow-specs", "--langgraph-node-specs", "--json"]) == 0
+    payload = capsys.readouterr().out
+    assert "workflow.protocol_checklist.v1::privacy_gate" in payload
 
 
 def test_reference_workflow_cli_outputs_markers(capsys):
@@ -173,3 +230,100 @@ def test_reference_workflow_cli_outputs_markers(capsys):
     assert "uploaded_data" in payload
     assert "paper_data_alignment" in payload
     assert "innovation_scan" in payload
+
+
+def test_end_to_end_workflow_outputs_report_and_memory_trace():
+    report = run_end_to_end_workflow("How do BRCA1 breast cancer papers connect drugs, datasets, and RAG methods?")
+
+    assert report.references
+    assert report.entities
+    assert report.memory_trace.success_paths
+    assert report.next_workflow
+    assert report.manuscript_workflow.imrad_outline
+    assert report.manuscript_workflow.audit_gates
+    assert report.contract_checks
+    assert all(item.status == "passed" for item in report.contract_checks)
+    assert report.memory_trace.path_patterns
+    assert "BioResearch-Agent End-to-End Report" in report.markdown
+    assert "Manuscript Workflow Package" in report.markdown
+    assert "Framework Contract Checks" in report.markdown
+    assert "Weaver-Compatible Path Patterns" in report.markdown
+    assert "Reviewer Response Plan" in report.markdown
+    assert "MemoryWeaver Trace Summary" in report.markdown
+    assert any(item.entity_type == "gene" and item.normalized_name == "BRCA1" for item in report.entities)
+
+
+def test_end_to_end_report_cli_outputs_markdown(capsys):
+    assert main(["How do BRCA1 breast cancer papers connect drugs and RAG methods?", "--end-to-end-report"]) == 0
+    payload = capsys.readouterr().out
+    assert "Citation-Backed Research Summary" in payload
+    assert "Next-Step Workflow" in payload
+    assert "Manuscript Workflow Package" in payload
+    assert "Framework Contract Checks" in payload
+    assert "MemoryWeaver Trace Summary" in payload
+
+
+def test_benchmark_outputs_independent_metrics():
+    payload = run_benchmark()
+
+    assert payload["benchmark_id"] == "bioresearch_agent_end_to_end_v1"
+    assert payload["case_count"] == 3
+    assert payload["passed_count"] >= 1
+    assert all("traceable_references" in item for item in payload["results"])
+    assert all("contract_checks_passed" in item for item in payload["results"])
+    assert all("weaver_path_patterns" in item for item in payload["results"])
+
+
+def test_benchmark_cli_outputs_markdown(capsys):
+    assert main(["--benchmark"]) == 0
+    payload = capsys.readouterr().out
+    assert "BioResearch-Agent Benchmark" in payload
+    assert "Traceable refs" in payload
+    assert "Contracts" in payload
+
+
+def test_external_skill_pack_discovery_and_langgraph_specs(tmp_path):
+    skill_dir = tmp_path / "medical-review-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(
+        """---
+name: Medical Review Skill
+description: Evidence-backed medical research audit for citations and claims.
+---
+
+# Medical Review Skill
+
+Use for public-safe medical manuscript audit.
+""",
+        encoding="utf-8",
+    )
+
+    specs = discover_external_skills(tmp_path)
+    nodes = build_langgraph_node_specs(specs)
+
+    assert len(specs) == 1
+    assert specs[0].skill_id == "medical-review-skill"
+    assert nodes[0].node_id == "external_skill::medical-review-skill"
+    assert "public_safe_research_question" in nodes[0].input_contract
+
+
+def test_external_skill_pack_cli_outputs_index(tmp_path, capsys):
+    skill_dir = tmp_path / "claim-audit"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(
+        """---
+name: Claim Audit
+description: Check manuscript claims against cited evidence.
+---
+""",
+        encoding="utf-8",
+    )
+
+    assert main(["--skill-pack", str(tmp_path), "--list-external-skills"]) == 0
+    payload = capsys.readouterr().out
+    assert "External Skill Pack Index" in payload
+    assert "claim-audit" in payload
+
+    assert main(["--skill-pack", str(tmp_path), "--langgraph-node-specs"]) == 0
+    payload = capsys.readouterr().out
+    assert "external_skill::claim-audit" in payload

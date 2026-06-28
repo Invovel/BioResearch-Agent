@@ -8,12 +8,40 @@ from .schemas import EvidenceDoc
 
 DEFAULT_PUBLIC_CORPUS: tuple[EvidenceDoc, ...] = (
     EvidenceDoc(
+        doc_id="pubmed-brca1-breast-cancer",
+        title="BRCA1-associated breast cancer evidence mapping",
+        source="pubmed-placeholder",
+        abstract="A public biomedical review can connect breast cancer, BRCA1, PARP inhibitors, and systematic review methods for citation-backed research planning.",
+        tags=("disease:breast cancer", "gene:BRCA1", "drug:PARP inhibitor", "method:systematic review"),
+        year=2025,
+        source_id="placeholder:pubmed-brca1-breast-cancer",
+    ),
+    EvidenceDoc(
+        doc_id="biorxiv-spatial-tme-dataset",
+        title="Spatial transcriptomics datasets for tumor microenvironment analysis",
+        source="biorxiv-placeholder",
+        abstract="Preprint metadata describes spatial transcriptomics methods, tumor microenvironment profiling, and public datasets such as TCGA and GEO for exploratory biomedical workflows.",
+        tags=("method:spatial transcriptomics", "dataset:TCGA", "dataset:GEO", "disease:tumor"),
+        year=2026,
+        source_id="placeholder:biorxiv-spatial-tme-dataset",
+    ),
+    EvidenceDoc(
+        doc_id="arxiv-biomedical-rag-method",
+        title="Retrieval augmented generation methods for biomedical literature agents",
+        source="arxiv-placeholder",
+        abstract="Biomedical RAG methods use retrieval, citations, entity extraction, and workflow traces to separate evidence from generated summaries.",
+        tags=("method:RAG", "method:entity extraction", "agent", "citation"),
+        year=2025,
+        source_id="placeholder:arxiv-biomedical-rag-method",
+    ),
+    EvidenceDoc(
         doc_id="pubmed-review-agent-workflows",
         title="Agent-assisted biomedical workflow planning",
         source="public-literature-placeholder",
         abstract="Biomedical research assistants can decompose questions, retrieve evidence, and draft reviewable analysis plans.",
         tags=("agent", "workflow", "planning"),
         year=2025,
+        source_id="placeholder:pubmed-review-agent-workflows",
     ),
     EvidenceDoc(
         doc_id="public-rag-evidence",
@@ -22,6 +50,7 @@ DEFAULT_PUBLIC_CORPUS: tuple[EvidenceDoc, ...] = (
         abstract="Retrieval augmented systems should separate retrieved evidence from generated reasoning and final claims.",
         tags=("rag", "evidence", "citation"),
         year=2024,
+        source_id="placeholder:public-rag-evidence",
     ),
     EvidenceDoc(
         doc_id="tool-orchestration-boundary",
@@ -30,6 +59,7 @@ DEFAULT_PUBLIC_CORPUS: tuple[EvidenceDoc, ...] = (
         abstract="Safe research agents use tool adapters, execution gates, and reviewable action plans before running external tools.",
         tags=("tool", "adapter", "execution", "review"),
         year=2025,
+        source_id="placeholder:tool-orchestration-boundary",
     ),
     EvidenceDoc(
         doc_id="reference-marker-comparison",
@@ -38,6 +68,7 @@ DEFAULT_PUBLIC_CORPUS: tuple[EvidenceDoc, ...] = (
         abstract="Reference markers can group papers for comparison and expansion without ranking them as good or bad.",
         tags=("marker", "comparison", "evidence"),
         year=2026,
+        source_id="placeholder:reference-marker-comparison",
     ),
     EvidenceDoc(
         doc_id="privacy-review-boundary",
@@ -46,6 +77,7 @@ DEFAULT_PUBLIC_CORPUS: tuple[EvidenceDoc, ...] = (
         abstract="Biomedical AI systems require privacy screening, human review, and clear boundaries for high-risk claims.",
         tags=("privacy", "review", "safety"),
         year=2024,
+        source_id="placeholder:privacy-review-boundary",
     ),
 )
 

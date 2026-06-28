@@ -10,11 +10,30 @@ biomedical question
   -> entity and evidence extraction
   -> citation-backed research summary
   -> next-step workflow
+  -> manuscript workflow package
   -> MemoryWeaver trace
   -> report
 ```
 
 BioResearch-Agent must keep this workflow public-safe: no private patient data, private project code, internal service routes, model paths, logs, credentials, or proprietary tool manifests.
+
+## Framework Reference Policy
+
+Implementation should learn from mature public frameworks and existing project experience, but stay clean-room:
+
+- Use public academic-writing skill projects for reusable workflow patterns: skill-pack layering, strategist/composer split, IMRAD contracts, audit gates, and reviewer-response loops.
+- Use `D:\Download\PathoFlow` only as a high-level framework reference for layered boundaries, contracts, provenance, execution gates, observability, benchmarks, and failure-path recording.
+- Do not copy PathoFlow source code, private data, logs, `.env`, runtime manifests, service routes, deployment paths, WISH/Pinglab assets, or generated reports.
+- If a PathoFlow-like pattern is adopted, express it as a small BioResearch-Agent-native contract, dataclass, test, or document rule.
+
+External skill packs can be mounted directly through `SKILL.md` discovery:
+
+```powershell
+python -m bioresearch_agent --skill-pack github:aipoch/medical-research-skills --list-external-skills
+python -m bioresearch_agent --skill-pack github:aipoch/medical-research-skills --langgraph-node-specs --json
+```
+
+This treats external skills as routing and operating contracts. It does not vendor their code or copy their writing instructions into generated biomedical reports.
 
 ## One-Line Flow
 
@@ -24,6 +43,7 @@ Input question
   -> extract disease / gene / drug / method / dataset
   -> generate cited research summary
   -> generate next-step workflow
+  -> generate manuscript strategy, IMRAD outline, and quality gates
   -> MemoryWeaver records success paths, failure paths, and evidence sources
   -> output report
 ```
@@ -50,8 +70,10 @@ flowchart TD
     F --> G["Marker and evidence verification"]
     G --> H["Citation-backed research summary"]
     H --> I["Next-step workflow"]
-    I --> J["MemoryWeaver trace"]
-    J --> K["Report"]
+    I --> J["Manuscript workflow package"]
+    J --> K["Framework contract checks"]
+    K --> L["MemoryWeaver trace"]
+    L --> M["Report"]
 ```
 
 ## Stage Contract
@@ -66,6 +88,8 @@ flowchart TD
 | Marker verification | References and extracted entities | Evidence-backed neutral markers | Markers are grouping labels, not quality scores. |
 | Research summary | Verified evidence records | Summary with citations | Every substantive claim should cite supporting references. |
 | Next-step workflow | Summary, gaps, conflicts, extracted entities | Reviewable research plan | Produce actions for human review, not clinical decisions. |
+| Manuscript workflow package | Summary, references, entities, gaps, marker checks | Strategist/composer steps, IMRAD outline, narrative checks, audit gates, reviewer-response plan | Produce writing scaffolds only; do not fabricate results, citations, or submission claims. |
+| Framework contract checks | Workflow outputs and trace | Stage checks for required outputs, missing evidence, and failure strategy | Encode mature-framework lessons as small public-safe checks, not copied framework code. |
 | MemoryWeaver | Run events, decisions, failures, evidence | Reusable public-safe trace | Store evidence IDs, paths taken, skipped paths, warnings, and rationale; do not store private data. |
 | Report | Summary, workflow, MemoryWeaver trace | Markdown or JSON report | Include caveats, evidence limits, and human-review requirement. |
 
@@ -156,6 +180,50 @@ The workflow should convert the summary into bounded next actions.
 8. Export the report.
 ```
 
+## Manuscript Workflow Package
+
+The manuscript package adapts mature public academic-writing skill patterns into BioResearch-Agent's privacy-safe boundary:
+
+| Borrowed pattern | BioResearch-Agent version |
+| --- | --- |
+| Skill-pack layering | Keep retrieval, evidence extraction, writing, QA, and response planning as separate reviewable stages. |
+| Strategist/composer split | Plan contribution, audience, gap, and outline before writing section-level prose. |
+| IMRAD section contracts | Give each section a purpose, evidence inputs, and quality gate. |
+| Nature-family / top-journal restraint | Use evidence-first narrative discipline without copying article language or pretending to match a journal. |
+| Paper-audit workflow | Check claim-citation support, evidence strength, figure/table messages, reproducibility, and privacy. |
+| Reviewer-response workflow | Map reviewer point -> action -> changed location -> evidence ID -> unresolved risk. |
+
+The generated package contains:
+
+```text
+1. Manuscript strategy
+2. Composer steps
+3. IMRAD outline
+4. Narrative checks
+5. Claim-citation and figure/table audit gates
+6. Reviewer response plan
+```
+
+It must not:
+
+- invent experiments, datasets, metrics, p-values, references, DOI values, or reviewer outcomes;
+- rewrite public evidence as clinical advice;
+- imitate copyrighted article prose;
+- remove caveats needed for biomedical safety.
+
+### Public Projects Used As Design References
+
+These projects informed the workflow structure. BioResearch-Agent does not copy their implementation code, private prompts, or article prose.
+
+| Public project | Pattern learned |
+| --- | --- |
+| [AcademicForge](https://github.com/HughYau/AcademicForge) | Curated academic skill packs work better than one giant all-purpose prompt. |
+| [medical-research-skills](https://github.com/aipoch/medical-research-skills) | Biomedical research workflows should be grouped by evidence discovery, protocol design, analysis, writing, and publication readiness. |
+| [codex-claude-academic-skills](https://github.com/zLanqing/codex-claude-academic-skills) | Writing, office documents, and scientific computation are complementary stages, not one blended task. |
+| [academic-paper-skills](https://github.com/lishix520/academic-paper-skills) | Strategist/composer separation keeps planning, evidence gaps, outline validation, drafting, and polishing reviewable. |
+| [nature-writing-skill](https://github.com/SyntaxSmith/nature-writing-skill) | A slim routing index plus targeted references is safer than loading a full writing manual at once. |
+| [academic-writing-skills](https://github.com/bahayonghang/academic-writing-skills) | Post-writing QA should separate format checks, citation integrity, reviewer-style audit, and source-preserving edits. |
+
 ## MemoryWeaver Trace
 
 MemoryWeaver is the public-safe run memory layer for this workflow. It records what happened, why it happened, and what evidence supported it.
@@ -224,22 +292,27 @@ The final report should be concise and auditable.
 6. Same-marker comparison
 7. Evidence gaps and failed paths
 8. Recommended next-step workflow
-9. MemoryWeaver trace summary
-10. Caveats and human-review checklist
+9. Manuscript workflow package
+10. MemoryWeaver trace summary
+11. Caveats and human-review checklist
 ```
+
+For external skill-pack mounting and LangGraph handoff details, see [skill_pack_integration.md](skill_pack_integration.md).
 
 ## Current Implementation Versus Extension Target
 
 | Capability | Current state | Extension target |
 | --- | --- | --- |
 | Privacy gate | Implemented in `bioresearch_agent/privacy.py` | Keep as first gate for every source adapter and report export. |
-| Retrieval | Local public placeholder corpus in `bioresearch_agent/retrieval.py` | Add clean PubMed, arXiv, and bioRxiv adapters returning `ReferenceRecord`. |
+| Retrieval | Local public placeholder corpus in `bioresearch_agent/retrieval.py`; optional live PubMed, arXiv, and bioRxiv metadata adapters in `bioresearch_agent/live_sources.py` | Add richer ranking, retries, pagination, and public ontology enrichment. |
 | Markers | Implemented as neutral reference markers | Extend marker provenance to include extracted entity evidence. |
-| Entity extraction | Not yet a dedicated module | Add public-safe disease/gene/drug/method/dataset extractor. |
-| Citation summary | Basic structured planning and export support | Add citation-backed report generator with explicit evidence IDs. |
-| Next-step workflow | Basic research planning | Add workflow generation from gaps, conflicts, and extracted entities. |
-| MemoryWeaver | Conceptual in this document | Add a small trace dataclass and JSON/Markdown export. |
-| Report | CLI JSON and Markdown export tool surfaces | Add full report template with evidence, workflow, trace, and caveats. |
+| Entity extraction | Dictionary/pattern extraction for disease/gene/drug/method/dataset with provenance. | Add public ontology-backed extraction and synonym expansion. |
+| Citation summary | End-to-end report generator cites reference IDs, DOI/URL/source IDs when available, and marker support. | Add full-text-public extraction when licenses allow. |
+| Next-step workflow | Generated from extracted entities, neutral markers, and source mode. | Add gap/conflict ranking and persistent task export. |
+| Manuscript workflow | Strategy, IMRAD outline, narrative checks, audit gates, and reviewer-response plan are generated in the end-to-end report. | Add source-backed section drafting and manuscript file export with citation integrity checks. |
+| MemoryWeaver | Trace dataclass records success paths, failure paths, evidence sources, query plan, and warnings. | Add persistent trace export and run-to-run learning. |
+| Report | Full Markdown/JSON report includes evidence, entities, marker checks, next workflow, manuscript package, trace, caveats, and live-source provenance when enabled. | Add optional file export. |
+| Benchmark | `python -m bioresearch_agent --benchmark` runs three independent workflow cases over placeholder or live adapters. | Add stored benchmark artifacts, historical trend comparison, and stricter entity recall metrics. |
 
 ## Minimal Implementation Roadmap
 
@@ -249,10 +322,31 @@ The final report should be concise and auditable.
 4. Add entity extraction over title, abstract, tags, and allowed public full text.
 5. Add citation-backed summary generation from verified evidence.
 6. Add next-step workflow generation from evidence gaps and entity groups.
-7. Add MemoryWeaver trace capture for success paths, failure paths, and evidence sources.
-8. Add report export tests and CLI flags.
+7. Add manuscript workflow package generation from mature public academic-writing patterns.
+8. Add MemoryWeaver trace capture for success paths, failure paths, and evidence sources.
+9. Add framework contract checks for stage outputs and traceability.
+10. Add report export tests and CLI flags.
 
 ## Validation Expectations
+
+Run the complete placeholder workflow:
+
+```powershell
+python -m bioresearch_agent "How do BRCA1 breast cancer papers connect drugs, datasets, and RAG methods?" --end-to-end-report
+```
+
+Run the complete live public-metadata workflow:
+
+```powershell
+python -m bioresearch_agent "BRCA1 breast cancer PARP inhibitor datasets RAG" --end-to-end-report --live-sources
+```
+
+Run the independent workflow benchmark:
+
+```powershell
+python -m bioresearch_agent --benchmark
+python -m bioresearch_agent --benchmark --live-sources
+```
 
 Before publishing changes to this workflow, run:
 
